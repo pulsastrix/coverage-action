@@ -258,7 +258,6 @@ runs:
         result-encoding: string
 
     - name: Generate issue comment body
-      if: contains(inputs.publish, 'true')
       run: |
         BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
         if [[ "${{ steps.repository-visibility.outputs.result }}" == "public" ]]
