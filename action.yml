@@ -245,7 +245,6 @@ runs:
         directory: ${{ inputs.diff-storage }}/data
 
     - name: Determine repository visibility
-      if: contains(inputs.publish, 'true')
       id: repository-visibility
       uses: actions/github-script@v7
       with:
@@ -260,16 +259,6 @@ runs:
     - name: Generate issue comment body
       run: |
         BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-        if [[ "${{ steps.repository-visibility.outputs.result }}" == "public" ]]
-        then {
-          # URL encoding for branch name
-          URL_ENCODED_BRANCH=$(python3 -c 'import urllib.parse; print(urllib.parse.quote_plus("${{ env.diff_storage_branch }}"))')
-          echo -e "![badge](https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ inputs.diff-storage }}/data/${URL_ENCODED_BRANCH}/${{ inputs.storage-subdirectory }}/badge.svg)\n\n" > .coverage-output.final
-        }
-        else {
-          echo -e "🧪 Test coverage: ${{ steps.coverage_percent.outputs.coverage_total }}%\n\n" > .coverage-output.final
-        }
-        fi
         echo -e "## ${{ inputs.coverage-summary-title }}\n" >> .coverage-output.final
         if [[ "${{ inputs.exclude-detailed-coverage }}" == "false" ]]
         then {
@@ -305,8 +294,18 @@ runs:
           COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
         }
         fi
+        if [[ "${{ steps.repository-visibility.outputs.result }}" == "public" ]]
+        then {
+          # URL encoding for branch name
+          URL_ENCODED_BRANCH=$(python3 -c 'import urllib.parse; print(urllib.parse.quote_plus("${{ env.diff_storage_branch }}"))')
+          echo -e "![badge](https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ inputs.diff-storage }}/data/${URL_ENCODED_BRANCH}/${{ inputs.storage-subdirectory }}/badge.svg)\n\n" > .coverage-output.final
+        }
+        else {
+          echo -e "🧪 Test coverage: ${{ steps.coverage_percent.outputs.coverage_total }}%\n\n" > .coverage-output.final
+        }
+        fi
         echo -e "\nResults for commit: $COMMIT_SHA\n" >> .coverage-output.final
-        echo -e "\n_Minimum allowed coverage is \`${{ inputs.threshold }}%\`_\n" >> .coverage-output.final
+        echo -e "\n_Coverage Target is \`${{ inputs.threshold }}%\`_\n" >> .coverage-output.final
         if [[ "${{ inputs.publish }}" == "true" ]]
         then {
           echo -e "\n:recycle: This comment has been updated with latest results\n" >> .coverage-output.final
